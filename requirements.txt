@@ -1,10 +1,11 @@
-streamlit>=1.47.0
-pandas>=1.4.0
-numpy>=1.23.0
-matplotlib>=3.5.0
-pillow>=7.1.0
-tensorflow>=2.19.0
-scikit-fuzzy>=0.5.0
-joblib>=1.0.0
-scikit-learn>=1.0.0
+streamlit==1.35.0
+pandas==1.5.3
+numpy==1.23.5
+matplotlib==3.7.1
+pillow==9.4.0
+tensorflow==2.13.0
+scikit-fuzzy==0.6
+joblib==1.2.0
+scikit-learn==1.2.2
+
 

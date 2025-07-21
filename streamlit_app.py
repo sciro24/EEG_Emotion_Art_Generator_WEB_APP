@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 # Titolo principale
-st.title("🧠 Analisi EEG e Predizione Emozioni")
+st.title("🧠 Analisi EEG e Predizione Emozioni 🎭")
 
 # Caricamento modello e scaler
 @st.cache_resource
@@ -83,7 +83,7 @@ with col1:
         """
     )
 with col2:
-    st.subheader("📊 Come funziona")
+    st.subheader("⚙️ Come funziona")
     st.markdown(
         """
         1. Prepara un file `.csv` con i dati EEG  
@@ -209,9 +209,9 @@ if uploaded_file is not None and model is not None and scaler is not None:
             st.markdown("<div style='height: 100%; border-left: 1px solid lightgray;'></div>", unsafe_allow_html=True)
 
         with col2:
-            st.markdown("### 🌊 Analisi Fuzzy")
+            st.markdown("### 📊 Analisi Fuzzy")
             if dominant_intensity is not None:
-                st.metric("Intensità Emozione:", f"{dominant_intensity:.2f}")
+                st.metric(f"Intensità Emozione {dominant_emotion}:", f"{dominant_intensity:.2f}")
                 fuzzy_df = pd.DataFrame({
                     'Emozione': list(fuzzy_intensities.keys()),
                     'Intensità': list(fuzzy_intensities.values())
@@ -227,7 +227,7 @@ if uploaded_file is not None and model is not None and scaler is not None:
         col3, col_div2, col4 = st.columns([1, 0.02, 1], gap="small")
 
         with col3:
-            st.markdown("### 📊 Feature Importance")
+            st.markdown("### 🧐 Feature Importance")
             try:
                 predicted_class_index = model_classes.index(dominant_emotion)
                 feature_importance = compute_feature_importance_ffnn(model, processed_eeg_data[0], predicted_class_index)

@@ -20,54 +20,8 @@ st.set_page_config(
 
 # Titolo principale
 st.title("🧠 Analisi EEG e Predizione Emozioni")
-st.write("---")
 
-# Sezione informativa
-col1, col2 = st.columns([2, 1], gap="large")
-
-with col1:
-    st.subheader("ℹ️ Informazioni sull'applicazione")
-    st.markdown(
-        """
-        Questa applicazione analizza i dati EEG e predice lo stato emozionale utilizzando:
-        - **Classificazione** delle emozioni tramite MLP  
-        - **Logica Fuzzy** per affinare le predizioni  
-        - **Feature Importance** per interpretabilità  
-        - **Arte Astratta** generata sulla base delle emozioni rilevate  
-        """
-    )
-
-with col2:
-    st.subheader("📊 Come funziona")
-    st.markdown(
-        """
-        1. Prepara un file `.csv` con i dati EEG  
-        2. Caricalo nell'applicazione  
-        3. Visualizza le emozioni predette e le analisi  
-        """
-    )
-
-st.write("---")
-
-# Sezione caricamento file
-st.subheader("📁 Caricamento Dati EEG")
-st.markdown("Trascina qui il file o clicca per selezionarlo dal tuo dispositivo.")
-
-uploaded_file = st.file_uploader(
-    label="**Upload file EEG (.csv)**",
-    type=['csv'],
-    label_visibility="collapsed",
-    help="Carica un file CSV contenente un campione EEG"
-)
-
-
-
-# Session state
-if 'model' not in st.session_state:
-    st.session_state.model = None
-if 'scaler' not in st.session_state:
-    st.session_state.scaler = None
-
+# Caricamento modello e scaler
 @st.cache_resource
 def load_model_and_scaler():
     try:
@@ -102,6 +56,56 @@ def load_model_and_scaler():
         st.error(f"Errore nel caricamento: {e}")
         return None, None, f"Errore: {e}"
 
+model, scaler, load_message = load_model_and_scaler()
+if "⚠️" in load_message:
+    st.warning(load_message)
+elif model is not None and scaler is not None:
+    st.success(load_message)
+else:
+    st.error(load_message)
+
+st.session_state.model = model
+st.session_state.scaler = scaler
+
+st.write("---")
+
+# Sezione informativa
+col1, col2 = st.columns([2, 1], gap="large")
+with col1:
+    st.subheader("ℹ️ Informazioni sull'applicazione")
+    st.markdown(
+        """
+        Questa applicazione analizza i dati EEG e predice lo stato emozionale utilizzando:
+        - **Classificazione** delle emozioni tramite MLP  
+        - **Logica Fuzzy** per affinare le predizioni  
+        - **Feature Importance** per interpretabilità  
+        - **Arte Astratta** generata sulla base delle emozioni rilevate  
+        """
+    )
+with col2:
+    st.subheader("📊 Come funziona")
+    st.markdown(
+        """
+        1. Prepara un file `.csv` con i dati EEG  
+        2. Caricalo nell'applicazione  
+        3. Visualizza le emozioni predette e le analisi  
+        """
+    )
+
+st.write("---")
+
+# Sezione caricamento file
+st.subheader("📁 Caricamento Dati EEG")
+st.markdown("Trascina qui il file o clicca per selezionarlo dal tuo dispositivo.")
+
+uploaded_file = st.file_uploader(
+    label="**Upload file EEG (.csv)**",
+    type=['csv'],
+    label_visibility="collapsed",
+    help="Carica un file CSV contenente un campione EEG"
+)
+
+# Funzioni
 def create_feature_importance_plot(feature_importance, feature_names, top_n=20):
     top_indices = np.argsort(feature_importance)[-top_n:][::-1]
     top_importance = feature_importance[top_indices]
@@ -139,35 +143,46 @@ def create_fuzzy_membership_plot_streamlit(fuzzy_value):
     basso = fuzz.trimf(x, [0, 0, 0.5])
     medio = fuzz.trimf(x, [0.2, 0.5, 0.8])
     alto = fuzz.trimf(x, [0.5, 1, 1])
+
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.plot(x, basso, label='Basso', linewidth=2)
     ax.plot(x, medio, label='Medio', linewidth=2)
     ax.plot(x, alto, label='Alto', linewidth=2)
+
+    # Riga tratteggiata verticale
     ax.axvline(fuzzy_value, color='red', linestyle='--', linewidth=2, label=f'Valore: {fuzzy_value:.2f}')
+
+    # Riquadro giallo con valore
+    ax.annotate(
+        f'{fuzzy_value:.2f}',
+        xy=(fuzzy_value, 0.95),
+        xytext=(fuzzy_value + 0.02, 0.95),
+        textcoords='data',
+        bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', edgecolor='black'),
+        fontsize=10,
+        ha='center',
+        va='bottom'
+    )
+
     ax.set_title('Appartenenza Fuzzy dello Stato Emotivo', pad=15)
     ax.set_xlabel('Output Normalizzato', labelpad=10)
     ax.set_ylabel('Grado di Appartenenza', labelpad=10)
+    ax.set_ylim(0, 1.05)
     ax.legend(loc='upper left')
     ax.grid(True, linestyle='--', alpha=0.6)
     plt.tight_layout()
     return fig
 
+
 def resize_generated_art(image, target_width=800, target_height=480):
     return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-# Caricamento modello e scaler
-model, scaler, load_message = load_model_and_scaler()
-if "⚠️" in load_message:
-    st.warning(load_message)
-elif model is not None and scaler is not None:
-    st.success(load_message)
-else:
-    st.error(load_message)
-
+# Analisi
 if uploaded_file is not None and model is not None and scaler is not None:
     try:
         eeg_data = pd.read_csv(uploaded_file)
-        st.success(f"File caricato con successo!")
+        st.success("File caricato con successo!")
+        st.write("---")
         feature_names = list(eeg_data.columns)
         processed_eeg_data = preprocess_eeg_data(eeg_data, scaler)
 
@@ -177,11 +192,12 @@ if uploaded_file is not None and model is not None and scaler is not None:
             probabilities = predictions[0]
             dominant_emotion, dominant_intensity, fuzzy_intensities = get_fuzzy_emotion_intensity(probabilities, model_classes)
 
-        col1, col2 = st.columns(2, gap="large")
+        # --- Sezione Emozioni Predette e Analisi Fuzzy con divisore ---
+        col1, col_div1, col2 = st.columns([1, 0.02, 1], gap="small")
 
         with col1:
             st.markdown("### 🎯 Emozioni Predette")
-            st.metric("Emozione Dominante", dominant_emotion)
+            st.metric("Emozione Dominante:", dominant_emotion)
             prob_df = pd.DataFrame({
                 'Emozione': model_classes,
                 'Probabilità': probabilities
@@ -189,10 +205,13 @@ if uploaded_file is not None and model is not None and scaler is not None:
             st.dataframe(prob_df, use_container_width=True, hide_index=True)
             st.pyplot(create_emotion_probability_plot(probabilities, model_classes))
 
+        with col_div1:
+            st.markdown("<div style='height: 100%; border-left: 1px solid lightgray;'></div>", unsafe_allow_html=True)
+
         with col2:
             st.markdown("### 🌊 Analisi Fuzzy")
             if dominant_intensity is not None:
-                st.metric("Intensità Emozione", f"{dominant_intensity:.2f}")
+                st.metric("Intensità Emozione:", f"{dominant_intensity:.2f}")
                 fuzzy_df = pd.DataFrame({
                     'Emozione': list(fuzzy_intensities.keys()),
                     'Intensità': list(fuzzy_intensities.values())
@@ -202,7 +221,10 @@ if uploaded_file is not None and model is not None and scaler is not None:
             else:
                 st.error("Errore nel calcolo dell'intensità fuzzy")
 
-        col3, col4 = st.columns(2, gap="large")
+        st.write("---")
+
+        # --- Sezione Feature Importance e Arte con divisore ---
+        col3, col_div2, col4 = st.columns([1, 0.02, 1], gap="small")
 
         with col3:
             st.markdown("### 📊 Feature Importance")
@@ -211,32 +233,35 @@ if uploaded_file is not None and model is not None and scaler is not None:
                 feature_importance = compute_feature_importance_ffnn(model, processed_eeg_data[0], predicted_class_index)
                 most_important_idx = np.argmax(feature_importance)
                 most_important_feature = feature_names[most_important_idx] if len(feature_names) > most_important_idx else f'Feature {most_important_idx}'
-                st.metric("Feature più Rilevante", most_important_feature)
+                st.metric("Feature più Rilevante:", most_important_feature)
                 fig = create_feature_importance_plot(feature_importance, feature_names)
                 st.pyplot(fig)
             except Exception as e:
                 st.error(f"Errore nel calcolo della feature importance: {e}")
 
+        with col_div2:
+            st.markdown("<div style='height: 100%; border-left: 1px solid lightgray;'></div>", unsafe_allow_html=True)
+
         with col4:
-            st.markdown("### 🎨 Arte Generativa")
+            st.markdown("### 🎨 Arte Generata")
             try:
                 generated_image = generate_abstract_art(dominant_emotion, fuzzy_intensities)
-                resized_image = resize_generated_art(generated_image, target_width=800, target_height=480)
-                st.markdown(f"**Arte generata per:** {dominant_emotion}")
+                resized_image = resize_generated_art(generated_image, target_width=800, target_height=440)
+                st.metric("Arte generata per Stato Emotivo:", dominant_emotion)
 
-                # Forza altezza minima al container immagine con CSS inline (480px)
                 st.markdown(
                     """
                     <style>
                     div[data-testid="stImage"] > img {
-                        height: 480px !important;
+                        height: 400px !important;
                         object-fit: contain;
                         width: 100% !important;
                     }
                     </style>
-                    """, unsafe_allow_html=True
+                    """,
+                    unsafe_allow_html=True
                 )
-                
+
                 st.image(resized_image, use_container_width=True)
                 img_buffer = io.BytesIO()
                 generated_image.save(img_buffer, format='PNG')
@@ -244,10 +269,8 @@ if uploaded_file is not None and model is not None and scaler is not None:
             except Exception as e:
                 st.error(f"Errore nella generazione dell'arte: {e}")
 
-
-
     except Exception as e:
         st.error(f"Errore durante l'elaborazione del file: {e}")
 
 st.markdown("---")
-st.markdown("Scirocco Diego")
+st.markdown("Progetto Realizzato da Scirocco Diego")

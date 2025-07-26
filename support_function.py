@@ -148,16 +148,12 @@ def compute_feature_importance_ffnn(model, input_data_np, class_idx):
     return np.abs(gradients.numpy())[0]
 
 def preprocess_eeg_data(eeg_df, scaler):
-    # Assumiamo che eeg_df sia un DataFrame pandas con i dati EEG
-    # e che scaler sia un oggetto StandardScaler già fittato.
-    
-    # Converti il DataFrame in un array numpy
     eeg_np = eeg_df.values
-    
-    # Applica lo scaler ai dati
+    if eeg_np.ndim == 1:
+        eeg_np = eeg_np.reshape(1, -1)
     scaled_eeg = scaler.transform(eeg_np)
-    
     return scaled_eeg
+
 
 def generate_art_from_emotion(predicted_emotion_label):
     # Questa funzione deve mappare l'etichetta dell'emozione predetta
